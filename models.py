@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import scipy.stats
 import scipy.optimize
 import statsmodels.api as sm
@@ -463,8 +463,8 @@ class BaseFlow(pl.LightningModule):
         # compute and log mean nll
         nll = criterion(z, delta_logp) / z.shape[0]
         self.log("t_loss", nll, prog_bar=True)
-        self.log("t_nan", torch.sum(nan_idx), prog_bar=True)
-        self.log("t_inf", torch.sum(inf_idx), prog_bar=True)
+        self.log("t_nan", torch.sum(nan_idx).type(torch.FloatTensor), prog_bar=True)
+        self.log("t_inf", torch.sum(inf_idx).type(torch.FloatTensor), prog_bar=True)
         return nll
 
     def validation_step(self, batch, batch_idx):
@@ -489,18 +489,21 @@ class BaseFlow(pl.LightningModule):
 
         # compute and log mean nll
         nll = criterion(z, delta_logp) / z.shape[0]
-        return {
+
+        self.outputs = {
             "loss": nll,
             "n_nan": torch.sum(nan_idx).type(torch.FloatTensor),
             "n_inf": torch.sum(inf_idx).type(torch.FloatTensor)
         }
 
-    def validation_epoch_end(self, outputs):
-        nll = torch.stack([o["loss"] for o in outputs]).mean()
+        return self.outputs
+
+    def on_validation_epoch_end(self):
+        nll = self.outputs["loss"].mean()
         self.log("v_loss", nll, prog_bar=True)
-        n_nan = torch.stack([o["n_nan"] for o in outputs]).mean()
+        n_nan = self.outputs["n_nan"].mean()
         self.log("v_nan", n_nan, prog_bar=True)
-        n_inf = torch.stack([o["n_inf"] for o in outputs]).mean()
+        n_inf = self.outputs["n_inf"].mean()
         self.log("v_inf", n_inf, prog_bar=True)
 
     def configure_optimizers(self):
