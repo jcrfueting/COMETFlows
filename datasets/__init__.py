@@ -9,3 +9,4 @@ from datasets.gas import GAS
 from datasets.hepmass import HEPMASS
 from datasets.miniboone import MINIBOONE
 from datasets.mnist import MNIST
+from datasets.csv import CSV

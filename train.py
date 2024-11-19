@@ -11,6 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from lightning.pytorch.callbacks import ModelCheckpoint
 
 import datasets
+import datasets.csv
 import util
 from util import NumpyDataset, VisualCallback
 from models import VanillaFlow, TAFlow, CMFlow, SoftFlow, COMETFlow
@@ -41,8 +42,10 @@ if __name__ == "__main__":
                             "hepmass",
                             "miniboone",
                             "mnist",
-                            "power"
+                            "power",
+                            "csv"
                         ])
+    parser.add_argument("--csv_path", type=str, help="filepath to .csv file containing the data")
     parser.add_argument("--batch_size", default=10_000, type=int, help="Batch size to train with")
     parser.add_argument("--hidden_ds", default=(64, 64, 64), type=tuple, help="Hidden dimensions in coupling NN")
     parser.add_argument("--n_samples", default=1_000, type=int, help="Number of samples to generate")
@@ -83,6 +86,8 @@ if __name__ == "__main__":
     elif args.data == "power":
         data = datasets.POWER()
         args.trainer.max_epochs = 100   # large dataset
+    elif args.data == "csv":
+        data = datasets.CSV(args.csv_path)
 
     # configure dataloaders
     train_dataset = NumpyDataset(data.trn.x)
