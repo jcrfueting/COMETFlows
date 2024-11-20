@@ -3,12 +3,13 @@ import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import pytorch_lightning as pl
+import lightning.pytorch as pl
+import lightning as L
 
 import wandb
-from argparse import ArgumentParser
+from lightning.pytorch.cli import LightningArgumentParser
 from torch.utils.data import Dataset, DataLoader
-from pytorch_lightning.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 import datasets
 import util
@@ -18,15 +19,16 @@ from models import VanillaFlow, TAFlow, CMFlow, SoftFlow, COMETFlow
 
 if __name__ == "__main__":
 
-    parser = ArgumentParser()
-    parser = pl.Trainer.add_argparse_args(parser)
-    parser.add_argument("--name", default="10j8c0u1", type=str, help="Name of wandb run")
+    parser = LightningArgumentParser()
+    parser.add_argument("--name", type=str, help="Name of wandb run")
+
+    parser.add_lightning_class_args(L.Trainer, "trainer")
     args = parser.parse_args()
 
     # wandb logging
     wandb.init(id=args.name, project="comet-flows", resume="must")
     api = wandb.Api()
-    run = api.run(f"andrewmcdonald/comet-flows/{args.name}")
+    run = api.run(f"comet-flows/{args.name}")
 
     # configure data
     data = None
@@ -48,6 +50,8 @@ if __name__ == "__main__":
         data = datasets.MNIST()
     elif run.config["data"] == "power":
         data = datasets.POWER()
+    else:
+        data = datasets.CSV(run.config["csv_path"])
 
     # configure dataloaders
     test_dataset = NumpyDataset(data.tst.x)
